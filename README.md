@@ -5,7 +5,7 @@
 
 ## Cardiovascular diseases and their relationship with maximum heart rate.
 
-### Risk factors in cardiovascular diseases.
+### 1.Risk factors in cardiovascular diseases.
 
 Millions of people around the world get heart disease every year and it
 is one of the leading causes of death in Mexico and the US. Statistical
@@ -13,7 +13,7 @@ analyzes have detected a wide variety of risk factors such as age, blood
 pressure, cholesterol, diabetes, genetics, etc. In this project we will
 perform statistical tests and regression models to analyze one factor:
 the maximum heart rate that someone can reach while exercising and how
-this is associated with a high probability of contracting heart disease.
+this is associated with a high probability of having heart disease.
 
 We will start by reading the database obtained from mysql: heart_data
 and we will observe the first lines of the database:
@@ -33,7 +33,7 @@ and we will observe the first lines of the database:
     #> 5     0
     #> 6     0
 
-### 1.Convert the Variable Classes to a Binomial Variable 0,1 and rename the genders at sex variable .
+### 2.Convert the Variable Classes to a Binomial Variable 0,1 and rename the genders at sex variable .
 
 Since the variable “class” has several events we will take 0 as the
 non-event and 1, 2, 3 and 4 as an event so that 0 maps to 0 and 1, 2, 3,
@@ -115,7 +115,7 @@ distributions of two variables differ categorically.
 ### 4.Exploring associations graphically.
 
 In addition to the p-values that we already obtained, now we will
-visualize with graphs age, sex, distributions of maximum blood pressure,
+visualize with graphs age, sex, distributions of maximum heart rate,
 this will make more sense in terms of the magnitude and direction of the
 relationships of the variables. We first use the boxplot for the age
 variable, since it is more ad hoc as it is a continuous variable. We
@@ -197,9 +197,9 @@ c)Calculate 95% lower and upper confidence intervals.
 We have created the logistic model, and we have examined the
 coefficients or Odd Ratios, now the question is: can we use this model
 to predict the probability that a person with some characteristic: age,
-sex, maximum blood pressure, has a heart disease? . Additionally, we
-would like to translate predictive probability into a decision rule or
-principle, so that doctors when evaluating a patient have the ability to
+sex, maximum heart rate, has a heart disease? . Additionally, we would
+like to translate predictive probability into a decision rule or
+principle, so doctors when evaluating a patient have the ability to
 predict the condition of their patients.
 
 a)Using the predict() function together with the database we have, the
