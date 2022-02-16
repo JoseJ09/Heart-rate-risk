@@ -1,0 +1,194 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Heart rate risk
+
+
+## Cardiovascular diseases and their relationship with maximum heart rate.
+
+### Risk factors in cardiovascular diseases.
+
+Millions of people around the world get heart disease every year and it is one of the leading causes of death in Mexico and the US. Statistical analyzes have detected a wide variety of risk factors such as age, blood pressure, cholesterol, diabetes, genetics, etc. In this project we will perform statistical tests and regression models to analyze one factor: the maximum heart rate that someone can reach while exercising and how this is associated with a high probability of contracting heart disease.
+
+We will start by reading the database obtained from mysql: heart_data
+and we will observe the first lines of the database:
+
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+library(tidyverse)
+library(survey)
+library(sampling)
+library(dplyr)
+library(ggplot2)
+library(broom)
+
+heartd<-read.csv("./heart_data.csv", sep=",")
+
+head(heartd)
+```
+
+### 1.Convert the Variable Classes to a Binomial Variable 0,1 and rename the genders at sex variable .
+
+Since the variable "class" has several events we will take 0 as the non-event and 1, 2, 3 and 4 as an event so that 0 maps to 0 and 1, 2, 3, 4 maps to 1, we will use the "mutate" function and add the column hd.
+
+We will rename the variable "sex" and convert it to a factor,so in this case 0 will be for Female and 1 for Male.
+
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+heartd <- heartd  %>% mutate(
+  hd = ifelse(class >  0, 1,0))
+
+heartd <- heartd %>% mutate(sex = factor(sex, levels = 0:1, labels = c("Female","Male")))
+
+
+head(heartd)
+```
+### 3.Identifying RELEVANT Variables.
+
+Now we will use statistical tests to find out which ones are related to heart disease. Depending on the type of data, we will use different tests, for example for continuous variables we will use t-test and for categorical variables we will use chi-square.
+
+Recall that the t-test is used to determine whether the means of two groups are significant. The chi test on its own examines whether two variables are independent, in a general way whether the probability distributions of two variables differ categorically.
+
+a) Chi test (function=chisq.test) between the sex variable and the hd variable, obtaining:
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+chisq.test(heartd$sex, heartd$hd, correct = TRUE)
+```
+
+b) Test t (t.test()), between the variables age and hd, obtaining:
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+t.test(heartd$age ~ heartd$hd)
+```
+
+c) Test t (t.test()) between the variables thalach and hd, obtaining:
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+t.test(heartd$thalach ~ heartd$hd)
+```
+
+### 4.Exploring associations graphically.
+
+In addition to the p-values that we already obtained, now we will visualize with graphs age, sex, distributions of maximum blood pressure, this will make more sense in terms of the magnitude and direction of the relationships of the variables.
+We first use the boxplot for the age variable, since it is more ad hoc as it is a continuous variable.
+We will create an additional variable with the mutate() function ,so we can label the variable hd as follows: If hd=1 Disease, otherwise No disease.
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+heartd2 <- heartd %>% mutate(
+  hd = ifelse(hd ==  0, "No disease", "Disease"))
+
+
+boxplot(heartd2$age~heartd2$hd,xlab = "Diagnostic",  
+        ylab = "Age",  
+        main = "Disease per age")
+
+boxplot(heartd2$thalach~heartd2$hd,xlab = "Diagnostic",  
+        ylab = "Thalach",  
+        main = "Disease per thalach" )
+
+ggplot(heartd2, aes(hd,fill = sex)) + geom_bar(position = 'fill') + 
+  labs(title='Sex per Diagnostic ',x='Diagnostic',y='Percentage')
+```
+
+
+### 5.Create multivariate model (logistic model).
+
+Observing the p<0.001 tests in all the tests as well as the graphs, we conclude that they are all relevant, so the next step will be to create a regression that helps us predict the hd variable using the glm() function.
+
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+model<-glm(data= heartd, hd~age+sex+thalach  ,family="binomial")
+
+summary(model)
+
+```
+
+### 6.Extract useful information from the multivariate model.
+
+In the practice of medical research, when comparing risk variables, the Odds Ratio (OR) is used to quantify how close the relationship is between one variable or another. When OR > 1 we say that it is positively associated or high probability of association, otherwise we say that it is negatively associated or low probability of association.
+
+
+a) We will use the broom package and convert the model information (“model” variable) to tiddy format.
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+tidy_m <- model %>% tidy()
+tidy_m
+
+```
+
+b)Calculate OR.
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+tidy_m$OR <- exp(tidy_m$estimate)
+
+tidy_m$OR
+
+```
+
+c)Calculate 95% lower and upper confidence intervals.
+
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+tidy_m$lower_CI <- exp(tidy_m$estimate - 1.96 * tidy_m$std.error)
+tidy_m$upper_CI <- exp(tidy_m$estimate + 1.96 * tidy_m$std.error)
+tidy_m
+
+```
+
+### 7.Model predictive probabilities.
+We have created the logistic model, and we have examined the coefficients or Odd Ratios, now the question is: can we use this model to predict the probability that a person with some characteristic: age, sex, maximum blood pressure, has a heart disease? . Additionally, we would like to translate predictive probability into a decision rule or principle, so that doctors when evaluating a patient have the ability to predict the condition of their patients.
+
+a)Using the predict() function together with the database we have, the model info we will find the predictive probability of the ~300 observations.
+
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+pred_prob <- predict(model, heartd, type = "response")
+pred_prob
+
+```
+
+b)Create a decision rule using probability 0.5 as cutoff and save the predicted decision into the main data frame.
+
+heartd$pred_hd <- ifelse(pred_prob>=.5,1,0)
+
+### 8.Testing the model.
+
+a)We create a new patient who arrives for an appointment.
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+newpatient <- data.frame(age=60 , sex="Male", thalach=120)
+newpatient
+
+```
+b)We predict the probability that this patient has heart disease.
+
+```{r , echo = FALSE,warning=FALSE,message=FALSE }
+
+p_new <- predict(model, newpatient, type = "response")
+
+pheart_risk<-p_new*100
+
+cat("The probability that this patient has heart disease is" , round((pheart_risk),4),"%")
+
+```
